@@ -10,7 +10,7 @@ cloudinary.config({
 const uploadOnCloudinary = async (localfilePath) => {
     try {
         if(!localfilePath) return null;
-        const response = await cloudinary.uploader.upload(localfilePath,{
+        const response = await cloudinary.v2.uploader.upload(localfilePath,{
         resource_type:'auto'
     })
         console.log("file is succesfully uploaded : ", response.url);
@@ -22,4 +22,15 @@ const uploadOnCloudinary = async (localfilePath) => {
     }
 }
 
-export {uploadOnCloudinary}
+const deleteOnCloudinary = async (cloudinaryPublicId) => {
+    try {
+        if(!cloudinaryPublicId) return null;
+        await cloudinary.uploader.destroy(cloudinaryPublicId, {
+            resource_type : 'auto'
+        })
+    } catch (error) {
+        return null
+    }
+}
+
+export {uploadOnCloudinary,deleteOnCloudinary}
