@@ -5,12 +5,12 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon -r dotenv/config --experimental-json-modules src/index.js"
+    "dev": "nodemon -r dotenv/config --experimental-json-modules index.js"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "nodemon": "^3.0.2",
+    "nodemon": "^3.1.9",
     "prettier": "^3.1.1"
   },
   "dependencies": {
@@ -19,6 +19,7 @@
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
+    "esbuild": "^0.24.0",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.0.3",
