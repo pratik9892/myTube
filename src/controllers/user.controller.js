@@ -53,7 +53,7 @@ const registerUser = asyncHandler( async (req,res) => {
     }
 
     const avatarLocalPath = req.files?.avatar[0]?.path
-    // const coverImageLocalPath = req.files?.coverImage[0]?.path
+    //const coverImageLocalPath = req.files?.coverImage[0]?.path
     // console.log(req.files);
     /*
     optional chaining gives problem and if user doesnot upload coverimage 
@@ -69,11 +69,12 @@ const registerUser = asyncHandler( async (req,res) => {
         throw new apiError(400,"Avatar file is required")
     }
 
-    const avatar = await uploadOnCloudinary(avatarLocalPath)
-    const coverImage = await uploadOnCloudinary(coverImageLocalPath)
+    const avatar = await uploadOnCloudinary(avatarLocalPath,"user-avatar")
+    const coverImage = await uploadOnCloudinary(coverImageLocalPath,"user-cover")
     // console.log(avatar);
     // console.log(coverImage);
-
+    // console.log(avatar);
+    
     if(!avatar){
         throw new apiError(400,"Avatar file not uploaded")
     }
@@ -116,7 +117,7 @@ const loginUser = asyncHandler( async (req,res) => {
     // const {email , password , username} = req.body
     const {username , email , password} = req.body;
 
-    console.log(email,password,username);
+    // console.log(email,password,username);
 
     if(!username && !email){
         throw new apiError(400,"username or email is required");
@@ -259,6 +260,8 @@ const changeCurrentPassword = asyncHandler(async (req,res) => {
     */
 
         const {oldPassword , newPassword } = req.body
+        // console.log(oldPassword,newPassword);
+        
 
         const user = await User.findById(req.user._id)
 
@@ -319,6 +322,8 @@ const updateAvatarImage = asyncHandler(async (req,res) => {
     if(!avatarLocalPath){
         throw new apiError(400,"Avatar file is missing")
     }
+
+    
 
     const avatar = await uploadOnCloudinary(avatarLocalPath)
 
