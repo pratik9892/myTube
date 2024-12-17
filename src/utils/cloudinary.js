@@ -9,14 +9,14 @@ cloudinary.config({
 
 const uploadOnCloudinary = async (localfilePath,folder) => {
     try {
-        console.log(localfilePath);
+        // console.log(localfilePath);
         
         if(!localfilePath) return null;
         const response = await cloudinary.uploader.upload(localfilePath,{
         resource_type:'auto',
         folder:folder
     })
-    console.log(response + "response");
+    // console.log(response + "response");
     
         console.log("file is succesfully uploaded : ", response.url);
         fs.unlinkSync(localfilePath)
@@ -27,15 +27,45 @@ const uploadOnCloudinary = async (localfilePath,folder) => {
     }
 }
 
-const deleteOnCloudinary = async (cloudinaryPublicId) => {
+// const deleteOnCloudinary = async (cloudinaryPublicId) => {
+//     try {
+//         if(!cloudinaryPublicId) return null;
+//         console.log(cloudinaryPublicId + "  inside deleteoncloudinary func");
+        
+//         const res = await cloudinary.uploader.destroy(cloudinaryPublicId, {
+//             resource_type : 'auto'
+//         })
+//         console.log(res);
+        
+//         return res
+//     } catch (error) {
+//         return error
+//     }
+// }
+
+const deleteOnCloudinary = async (cloudinaryPublicId, resourceType = 'image') => {
     try {
-        if(!cloudinaryPublicId) return null;
-        await cloudinary.uploader.destroy(cloudinaryPublicId, {
-            resource_type : 'auto'
-        })
+        // Validate the public ID
+        if (!cloudinaryPublicId || typeof cloudinaryPublicId !== 'string') {
+            console.error("Invalid public ID provided");
+            return null;
+        }
+
+        // console.log(`${cloudinaryPublicId} inside deleteOnCloudinary function`);
+
+        // Call the Cloudinary destroy method with dynamic resource_type
+        const res = await cloudinary.uploader.destroy(cloudinaryPublicId, {
+            resource_type: resourceType // 'image', 'video', or 'raw'
+        });
+
+        // console.log("Cloudinary Response:", res);
+
+        return res;
     } catch (error) {
-        return error
+        console.error("Error deleting file on Cloudinary:", error);
+        return error;
     }
-}
+};
+
 
 export {uploadOnCloudinary,deleteOnCloudinary}
