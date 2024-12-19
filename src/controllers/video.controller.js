@@ -1,13 +1,13 @@
 import mongoose, { isValidObjectId } from "mongoose";
-import { Video } from "../models/video.model";
-import { apiError } from "../utils/apiError";
-import { asyncHandler } from "../utils/asyncHandler";
-import { uploadOnCloudinary, deleteOnCloudinary } from "../utils/cloudinary";
-import { User } from "../models/user.model";
-import { apiResponse } from "../utils/apiResponse";
-import { getPublicId } from "../utils/retrievePublicID";
-import { Comment } from "../models/comment.model";
-import { Like } from "../models/like.model";
+import { Video } from "../models/video.model.js";
+import { apiError } from "../utils/apiError.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { uploadOnCloudinary, deleteOnCloudinary } from "../utils/cloudinary.js";
+import { User } from "../models/user.model.js";
+import { apiResponse } from "../utils/apiResponse.js";
+import { getPublicId } from "../utils/retrievePublicID.js";
+import { Comment } from "../models/comment.model.js";
+import { Like } from "../models/like.model.js";
 
 const uploadVideo = asyncHandler(async (req, res) => {
   // take title,description from user
@@ -18,18 +18,28 @@ const uploadVideo = asyncHandler(async (req, res) => {
   //send the response to the user and the video object
 
   const { title, description } = req.body;
-  const videoLocalPath = req.file?.video[0]?.path;
-  const thumbnailLocalPath = req.file?.thumbnail[0]?.path;
+  const videoLocalPath = req.files?.video[0]?.path;
+  const thumbnailLocalPath = req.files?.thumbnail[0]?.path;
+  // console.log(req.file + "  req file");
+  
+  if (!videoLocalPath ) {
+    throw new apiError(400, "Video File missing");
+  }
 
-  if (!videoLocalPath || !thumbnailLocalPath) {
-    throw new apiError(400, "Video or thumbnail File missing");
+  if(!thumbnailLocalPath){
+    throw new apiError(400, "thumbnail File missing");
   }
 
   const videoUrl = await uploadOnCloudinary(videoLocalPath, "user-video");
+  console.log(...videoUrl + "         video res");
+  
   const thumbnailUrl = await uploadOnCloudinary(
     thumbnailLocalPath,
     "user-thumbnail"
   );
+  console.log(...thumbnailUrl + "      thumbnail res");
+  
+
 
   if (!videoUrl) {
     throw new apiError(501, "Video not uploaded");
@@ -77,7 +87,9 @@ const getVideoById = asyncHandler(async (req, res) => {
 
   const video = await Video.aggregate([
     {
-      $match: new mongoose.Types.ObjectId(videoId),
+      $match: {
+        _id :  new mongoose.Types.ObjectId(videoId),
+      }
     },
     {
       $lookup: {
@@ -131,7 +143,7 @@ const getVideoById = asyncHandler(async (req, res) => {
     },
     {
       $addFields: {
-        $likesCount: {
+        likesCount: {
           $size: { $ifNull: ["$likes", []] },
         },
         owner: {
@@ -139,12 +151,12 @@ const getVideoById = asyncHandler(async (req, res) => {
         },
         isLiked: {
           $cond: {
-            $if: {
+            if: {
               $in: [req.user?._id, "$likes.likedBy"],
             },
-          },
-          $then: true,
-          $else: false,
+          then: true,
+          else: false,
+          }
         },
       },
     },
@@ -208,13 +220,15 @@ const updateVideo = asyncHandler(async (req, res) => {
   }
 
   const oldThumbnailPublicId = getPublicId(video?.thumbnail);
+  console.log(oldThumbnailPublicId);
+  
   const newThumbnailLocalPath = req.file.path;
 
   if (!newThumbnailLocalPath) {
     throw new apiError(400, "Thumbnail image not uploaded properly");
   }
 
-  const thumbnail = await uploadOnCloudinary(newThumbnailLocalPath);
+  const thumbnail = await uploadOnCloudinary(newThumbnailLocalPath,"user-thumbnail");
 
   if (!thumbnail) {
     throw new apiError(500, "Error while uploading thumbnail image");
@@ -263,6 +277,8 @@ const deleteVideo = asyncHandler(async (req, res) => {
   }
 
   const videoPublicId = getPublicId(video?.videoFile);
+  console.log(videoPublicId + "  video pub id");
+  
   const thumbnailPublicId = getPublicId(video?.thumbnail);
 
   const deletedVideo = await Video.findByIdAndDelete(videoId);
@@ -339,10 +355,106 @@ const toggleIsPublished = asyncHandler(async (req,res) => {
     )
 })
 
+const getAllVideos = asyncHandler(async (req,res) => {
+
+  const {page=1,limit=10,sortBy,sortType,query,userId} = req.query
+  const pipeline = []
+
+  if(query){
+    pipeline.push({
+      $match : {
+        $or : [
+          {title : {$regex:query,$options:"i"}},
+          {description : {$regex:query,$options:"i"}}
+        ]
+      }
+    })
+  }
+
+  if(userId){
+
+    if(!isValidObjectId(userId)){
+      throw new apiError(400,"Enter valid userID")
+    }
+
+    pipeline.push({
+      $match : {
+        owner : new mongoose.Types.ObjectId(userId)
+      }
+    })
+  }
+
+  pipeline.push({
+    $match : {
+      isPublished : true
+    }
+  })
+
+  if(sortBy && sortType){
+    pipeline.push({
+      $sort : {
+        [sortBy] : sortType === "asc" ? 1 : -1
+      }
+    })
+  } else {
+    pipeline.push({
+      $sort : {
+        createdAt : 1
+      }
+    })
+  }
+
+
+  pipeline.push({
+    $lookup : {
+      from : "users",
+      localField:"owner",
+      foreignField:"_id",
+      as:"ownerDetails",
+      pipeline : [
+        {
+          $project : {
+            username : 1,
+            avatar : 1
+          }
+        }
+      ]
+    },
+  },
+  {
+      $unwind : "$ownerDetails"
+  }
+)
+
+if(!page && !limit){
+  pipeline.push({
+    $sample : {size:10}
+  })
+}
+
+const videoAggregate = Video.aggregate(pipeline)
+
+const options = {
+  page : parseInt(page,10),
+  limit : parseInt(limit,10)
+}
+
+const video = await Video.aggregatePaginate(videoAggregate,options)
+
+return res
+.status(200)
+.json(
+  new apiResponse(200,video,"Videos fetched succesfully")
+)
+
+
+})
+
 export { 
     uploadVideo, 
     getVideoById, 
     updateVideo, 
     deleteVideo,
-    toggleIsPublished
+    toggleIsPublished,
+    getAllVideos
 };
