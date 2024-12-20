@@ -170,9 +170,6 @@ const getUserTweet = asyncHandler(async(req,res) => {
             }
         },
         {
-            $unwind : "$likes"
-        },
-        {
             $sort : {
                 createdAt : -1
             }

@@ -1,7 +1,7 @@
-import mongoose from "mongoose"
+import mongoose,{Schema} from "mongoose"
 
 const playlistSchema = new mongoose.Schema({
-    name:{
+    title:{
         type :String,
         required:true
     },
