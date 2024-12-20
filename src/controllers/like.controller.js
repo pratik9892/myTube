@@ -3,7 +3,7 @@ import {Like} from "../models/like.model.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
 import {apiError} from "../utils/apiError.js"
 import {Comment} from "../models/comment.model.js"
-import {Tweet} from "../models/tweet.model.js"
+import { Tweet } from "../models/tweet.model.js"
 import { apiResponse } from "../utils/apiResponse.js"
 
 
@@ -53,13 +53,13 @@ const toggleCommentLike = asyncHandler(async(req,res) => {
         throw new apiError(400,"Invalid videoId")
     }
 
-    const prevCommentLike = await Comment.findOne({
+    const prevCommentLike = await Like.findOne({
         comment : commentId,
         likedBy : req.user?._id
     })
 
     if(prevCommentLike){
-        await Comment.findByIdAndDelete(prevCommentLike._id)
+        await Like.findByIdAndDelete(prevCommentLike._id)
 
         return res.
         status(200)
@@ -68,7 +68,7 @@ const toggleCommentLike = asyncHandler(async(req,res) => {
         )
     }
 
-    const commentLike = await Comment.create({
+    const commentLike = await Like.create({
         comment : commentId,
         likedBy : req.user?._id
     })
@@ -91,13 +91,13 @@ const toggleTweetLike = asyncHandler(async(req,res) => {
         throw new apiError(400,"Invalid videoId")
     }
 
-    const prevtweetLike = await Tweet.findOne({
+    const prevtweetLike = await Like.findOne({
         tweet : tweetId,
         likedBy : req.user?._id
     })
 
     if(prevtweetLike){
-        await Comment.findByIdAndDelete(prevtweetLike._id)
+        await Like.findByIdAndDelete(prevtweetLike._id)
 
         return res.
         status(200)
@@ -106,7 +106,7 @@ const toggleTweetLike = asyncHandler(async(req,res) => {
         )
     }
 
-    const tweetLike = await Tweet.create({
+    const tweetLike = await Like.create({
         tweet : tweetId,
         likedBy : req.user?._id
     })

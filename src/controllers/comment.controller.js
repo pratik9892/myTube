@@ -1,73 +1,79 @@
-import mongoose from "mongoose"
+import mongoose, { isValidObjectId } from "mongoose"
 import {asyncHandler} from "../utils/asyncHandler.js"
 import {apiError} from "../utils/apiError.js"
 import {Comment} from "../models/comment.model.js"
 import { apiResponse } from "../utils/apiResponse.js"
+import { Video } from "../models/video.model.js"
 
 
 const getVideoComments = asyncHandler(async(req,res) => {
     const {videoId} = req.params
+    const { page = 1, limit = 10 } = req.query;
     
     if(!isValidObjectId(videoId)){
         throw new apiError(400,"Invalid videoID")
     }
 
     const comments = await Comment.aggregate([
-        {
-            $match : {
-                video : new mongoose.Types.ObjectId(videoId)
-            }
-        },
-        {
-            $lookup : {
-                from : "users",
-                localField:"owner",
-                foreignField:"_id",
-                as:"owner"
-            }
-        },
-        {
-            $lookup:{
-                from : "likes",
-                localField:"_id",
-                foreignField:"comment",
-                as:"likes"
-            }
-        },
-        {
-            $addFields:{
-                owner : {
-                    $first : "$owner"
-                },
-                likesCount:{
-                    $size:"$likes"
-                },
-                isLiked : {
-                    $cond : {
-                        $if : {
-                            $in : [req.user?._id,"$likes.likedBy"]
-                        },
-                        then : true,
-                        else : false,
-                    }
+        
+            {
+                $match: {
+                    video: new mongoose.Types.ObjectId(videoId) // Ensure `videoId` is valid
                 }
-            }
-        },
-        {
-            $sort : {createdAt:-1}
-        },
-        {
-            $project : {
-                content:1,
-                createdAt:1,
-                likesCount:1,
-                isLiked:1,
-                owner:{
-                    username:1,
-                    avatar:1
-                }
-            }
-        }
+            },
+            // {
+            //     $lookup: {
+            //         from: "user",
+            //         localField: "owner",
+            //         foreignField: "_id",
+            //         as: "owner"
+            //     }
+            // },
+            // {
+            //     $lookup: {
+            //         from: "likes",
+            //         localField: "_id",
+            //         foreignField: "comment",
+            //         as: "likes"
+            //     }
+            // },
+            // {
+            //     $addFields: {
+            //         owner: {
+            //             $first: "$owner"
+            //         },
+            //         likesCount: {
+            //             $size: "$likes"
+            //         },
+            //         isLiked: {
+            //             $cond: {
+            //                 if: {
+            //                     $in: [new mongoose.Types.ObjectId(req.user?._id), "$likes.likedBy"]
+            //                 },
+            //                 then: true,
+            //                 else: false
+            //             }
+            //         }
+            //     }
+            // },
+            // {
+            //     $sort: {
+            //         createdAt: -1
+            //     }
+            // },
+            // {
+            //     $project: {
+            //         content: 1,
+            //         createdAt: 1,
+            //         likesCount: 1,
+            //         isLiked: 1,
+            //         owner: {
+            //             username: 1,
+            //             avatar: 1
+            //         }
+            //     }
+            // }
+                
     ])
 
     const options = {
@@ -75,7 +81,10 @@ const getVideoComments = asyncHandler(async(req,res) => {
         limit:parseInt(limit,10)
     }
 
-    const videoComments = await Comment.aggregatePaginate(comments,options)
+    const videoComments = await Comment.aggregatePaginate(
+        comments,
+        options,
+    )
 
     return res
     .status(200)
@@ -150,11 +159,11 @@ const updateComments = asyncHandler(async(req,res) => {
         comment?._id,
         {
            $set : {
-            content,
+            content
            }
         },
         {
-            $new:true
+                new:true
         }
     )
 
